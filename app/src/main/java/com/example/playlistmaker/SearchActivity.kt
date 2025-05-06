@@ -2,14 +2,13 @@ package com.example.playlistmaker
 
 import android.content.Context
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.isVisible
+import androidx.core.widget.doOnTextChanged
 
 class SearchActivity : AppCompatActivity() {
 
@@ -38,19 +37,14 @@ class SearchActivity : AppCompatActivity() {
             searchEditText.setText(searchQuery)
         }
 
-        searchEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                searchQuery = s?.toString() ?: ""
-                clearButton.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+        searchEditText.doOnTextChanged { text, _, _, _ ->
+            searchQuery = text?.toString().orEmpty()
+            clearButton.isVisible = searchQuery.isNotEmpty()
+        }
 
         clearButton.setOnClickListener {
             searchEditText.text.clear()
-            clearButton.visibility = View.GONE
+            clearButton.isVisible = false
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(searchEditText.windowToken, 0)
         }
