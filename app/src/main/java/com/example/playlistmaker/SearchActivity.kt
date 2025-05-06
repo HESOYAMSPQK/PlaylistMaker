@@ -15,6 +15,11 @@ class SearchActivity : AppCompatActivity() {
 
     private lateinit var searchEditText: EditText
     private lateinit var clearButton: ImageView
+    private var searchQuery: String = ""
+
+    companion object {
+        private const val SEARCH_QUERY_KEY = "SEARCH_QUERY_KEY"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,8 +33,14 @@ class SearchActivity : AppCompatActivity() {
         searchEditText = findViewById(R.id.searchEditText)
         clearButton = findViewById(R.id.clearButton)
 
+        if (savedInstanceState != null) {
+            searchQuery = savedInstanceState.getString(SEARCH_QUERY_KEY, "")
+            searchEditText.setText(searchQuery)
+        }
+
         searchEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
+                searchQuery = s?.toString() ?: ""
                 clearButton.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
 
@@ -43,5 +54,16 @@ class SearchActivity : AppCompatActivity() {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(searchEditText.windowToken, 0)
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(SEARCH_QUERY_KEY, searchQuery)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        searchQuery = savedInstanceState.getString(SEARCH_QUERY_KEY, "")
+        searchEditText.setText(searchQuery)
     }
 }
