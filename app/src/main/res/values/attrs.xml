@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="colorSearch" format="color" />
+    <attr name="colorOnSearch" format="color" />
+</resources>

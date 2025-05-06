@@ -15,8 +15,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PlaylistMaker"
         tools:targetApi="31">
-        <activity android:name=".SettingsActivity"/>
-        <activity android:name=".SearchActivity"/>
+        <activity android:name=".SettingsActivity"
+            android:theme="@style/Theme.PlaylistMaker"
+            android:exported="false"/>
+        <activity android:name=".SearchActivity"
+            android:exported="false"/>
         <activity android:name=".MediaLibraryActivity"/>
         <activity
             android:name=".MainActivity"

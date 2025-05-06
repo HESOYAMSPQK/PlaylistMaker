@@ -6,6 +6,9 @@ plugins {
 android {
     namespace = "com.example.playlistmaker"
     compileSdk = 35
+    defaultConfig {
+        vectorDrawables.useSupportLibrary = true
+    }
 
     defaultConfig {
         applicationId = "com.example.playlistmaker"
