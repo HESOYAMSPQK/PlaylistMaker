@@ -3,4 +3,5 @@
     <attr name="colorSearch" format="color" />
     <attr name="colorOnSearch" format="color" />
     <attr name="colorBackground" format="color" />
+    <attr name="colorOnPlayList" format="color" />
 </resources>

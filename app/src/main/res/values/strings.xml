@@ -15,4 +15,5 @@
     <string name="email_subject">Сообщение разработчикам и разработчицам приложения Playlist Maker</string>
     <string name="email_body">Спасибо разработчикам и разработчицам за крутое приложение!</string>
     <string name="agreement_url">https://yandex.ru/legal/practicum_offer/</string>
+    <string name="track_cover">Обложка трека</string>
 </resources>

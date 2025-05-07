@@ -9,6 +9,8 @@
         <item name="colorSurface">@color/background_dark</item>
         <item name="colorOnSurface">@color/white</item>
 
+        <item name="colorOnPlayList">@color/white</item>
+
         <item name="colorSearch">@color/white</item>
         <item name="colorOnSearch">@color/black</item>
     </style>
