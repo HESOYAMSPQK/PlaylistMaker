@@ -13,13 +13,14 @@
     <dimen name="search_field_height">36dp</dimen>
     <dimen name="search_icon_size">16dp</dimen>
     <dimen name="search_icon_margin_start">12dp</dimen>
-    <dimen name="search_icon_margin_vertical">10dp</dimen>
+    <dimen name="search_icon_margin_vertical">12dp</dimen>
     <dimen name="search_clear_button_size">16dp</dimen>
     <dimen name="search_clear_button_margin_end">10dp</dimen>
     <dimen name="search_clear_button_margin_vertical">10dp</dimen>
     <dimen name="search_text_margin_start">8dp</dimen>
     <dimen name="search_field_margin_top">8dp</dimen>
     <dimen name="status_bar_height">24dp</dimen>
+
 
     <dimen name="item_track_height">61dp</dimen>
     <dimen name="track_image_size">45dp</dimen>
@@ -37,6 +38,10 @@
     <dimen name="dot_icon_margin_start">5dp</dimen>
 
     <dimen name="track_time_margin_start">5dp</dimen>
+
+    <dimen name="arrow_container_size">24dp</dimen>
+    <dimen name="arrow_icon_actual_width">8dp</dimen>
+    <dimen name="arrow_icon_actual_height">12dp</dimen>
 
     <dimen name="arrow_icon_size">24dp</dimen>
     <dimen name="arrow_icon_margin_end">12dp</dimen>

@@ -42,14 +42,13 @@
             app:drawableStartCompat="@drawable/ic_search"
             app:drawableTint="?attr/colorOnSearch"
             app:tint="?attr/colorOnSearch"
+            android:gravity="center_vertical"
             android:textColor="@android:color/black"
             android:textColorHint="?attr/colorOnSearch"
             android:textSize="16sp"
             android:drawablePadding="@dimen/search_text_margin_start"
             android:paddingStart="@dimen/search_icon_margin_start"
             android:paddingEnd="@dimen/search_clear_button_margin_end"
-            android:paddingTop="@dimen/search_icon_margin_vertical"
-            android:paddingBottom="@dimen/search_icon_margin_vertical"
             android:fontFamily="@font/ys_display_regular"
             android:inputType="text" />
 

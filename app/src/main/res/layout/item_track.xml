@@ -72,17 +72,23 @@
         app:layout_constraintTop_toTopOf="@id/artistName"
         app:layout_constraintBottom_toBottomOf="@id/artistName" />
 
-    <ImageView
-        android:id="@+id/arrowIcon"
-        android:layout_width="@dimen/arrow_icon_size"
-        android:layout_height="@dimen/arrow_icon_size"
+    <FrameLayout
+        android:layout_width="@dimen/arrow_container_size"
+        android:layout_height="@dimen/arrow_container_size"
         android:layout_marginEnd="@dimen/arrow_icon_margin_end"
         android:layout_marginTop="@dimen/arrow_icon_margin_top"
         android:layout_marginBottom="@dimen/arrow_icon_margin_bottom"
-        android:src="@drawable/ic_arrow_right"
-        android:contentDescription="@null"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:tint="?attr/colorOnPlayList"/>
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ImageView
+            android:id="@+id/arrowIcon"
+            android:layout_width="@dimen/arrow_icon_actual_width"
+            android:layout_height="@dimen/arrow_icon_actual_height"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_arrow_right"
+            android:contentDescription="@null"
+            app:tint="?attr/colorOnPlayList"/>
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
