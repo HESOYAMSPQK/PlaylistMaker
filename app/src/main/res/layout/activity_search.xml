@@ -50,7 +50,10 @@
             android:paddingStart="@dimen/search_icon_margin_start"
             android:paddingEnd="@dimen/search_clear_button_margin_end"
             android:fontFamily="@font/ys_display_regular"
-            android:inputType="text" />
+            android:inputType="text"
+            android:imeOptions="actionDone"
+            android:singleLine="true" />
+
 
         <ImageButton
             android:id="@+id/clearButton"
@@ -77,6 +80,44 @@
         android:clipToPadding="false"
         android:scrollbars="vertical"
         tools:listitem="@layout/item_track"/>
+
+    <ImageView
+        android:id="@+id/placeholderImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="102dp"
+        android:layout_marginStart="120dp"
+        android:layout_marginEnd="120dp"
+        android:adjustViewBounds="true"
+        android:visibility="gone"
+        android:src="@drawable/placeholder_no_results_light_mode" />
+
+    <TextView
+        android:id="@+id/placeholderText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Заглушка"
+        android:textSize="19sp"
+        android:fontFamily="@font/ys_display_medium"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        android:gravity="center" />
+
+
+    <Button
+        android:id="@+id/placeholderRetryButton"
+        style="@style/RetryButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="@string/button_retry"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+
+
+
 
 
 
