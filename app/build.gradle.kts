@@ -1,11 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
     namespace = "com.example.playlistmaker"
     compileSdk = 35
+    defaultConfig {
+        vectorDrawables.useSupportLibrary = true
+    }
 
     defaultConfig {
         applicationId = "com.example.playlistmaker"
@@ -45,4 +49,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.glide)
+    kapt(libs.glide.compiler)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 }

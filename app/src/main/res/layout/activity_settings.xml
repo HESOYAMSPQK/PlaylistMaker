@@ -1,24 +1,67 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorBackground"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#1A1B22">
+    android:fitsSystemWindows="true">
 
-    <TextView
-        android:id="@+id/header"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Настройки"
-        android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        android:layout_marginBottom="16dp" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/back_button"
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Назад"
-        android:textColor="#000000"
-        android:background="@drawable/rounded_button" />
+        android:layout_height="56dp"
+        android:background="?android:attr/colorBackground"
+        android:theme="?attr/actionBarTheme"
+        app:navigationIcon="@drawable/ic_back"
+        app:title="@string/settings_title"
+        app:titleTextColor="?attr/colorOnBackground"
+        app:titleTextAppearance="@style/ToolbarTitleStyle"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_16">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="@dimen/padding_16">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                style="@style/SettingsLabelStyle"
+                android:text="@string/dark_theme" />
+
+
+            <Switch
+                android:id="@+id/themeSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/shareLayout"
+            style="@style/SettingsTextButtonStyle"
+            android:text="@string/share_app"
+            app:drawableEndCompat="@drawable/ic_share" />
+
+        <TextView
+            android:id="@+id/supportLayout"
+            style="@style/SettingsTextButtonStyle"
+            android:text="@string/support"
+            app:drawableEndCompat="@drawable/ic_help" />
+
+        <TextView
+            android:id="@+id/agreementLayout"
+            style="@style/SettingsTextButtonStyle"
+            android:text="@string/user_agreement"
+            app:drawableEndCompat="@drawable/ic_arrow_right" />
+
+
+    </LinearLayout>
 </LinearLayout>
