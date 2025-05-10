@@ -16,6 +16,12 @@
 
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
+
+        <item name="colorButtonBackground">@color/black</item>
+        <item name="colorButtonText">@color/white</item>
+
+
+
     </style>
 
 </resources>

@@ -1,80 +1,169 @@
 package com.example.playlistmaker
 
-import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
-import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
-import android.widget.ImageView
-import androidx.appcompat.app.AppCompatActivity
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.inputmethod.EditorInfo
+import android.widget.*
 import androidx.appcompat.widget.Toolbar
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.playlistmaker.network.RetrofitClient
+import com.example.playlistmaker.network.TrackResponse
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.text.SimpleDateFormat
+import java.util.*
 
 class SearchActivity : AppCompatActivity() {
 
     private lateinit var searchEditText: EditText
+    private lateinit var clearButton: ImageButton
     private lateinit var tracksRecyclerView: RecyclerView
     private lateinit var trackAdapter: TrackAdapter
-    private lateinit var clearButton: ImageView
-    private var searchQuery: String = ""
+    private lateinit var placeholderImage: ImageView
+    private lateinit var placeholderText: TextView
+    private lateinit var retryButton: Button
 
-    companion object {
-        private const val SEARCH_QUERY_KEY = "SEARCH_QUERY_KEY"
-    }
+    private var lastSearchText: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
 
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener { finish() }
+        toolbar.setNavigationOnClickListener {
+            finish()
+        }
+
 
         searchEditText = findViewById(R.id.searchEditText)
         clearButton = findViewById(R.id.clearButton)
         tracksRecyclerView = findViewById(R.id.tracksRecyclerView)
+        placeholderImage = findViewById(R.id.placeholderImage)
+        placeholderText = findViewById(R.id.placeholderText)
+        retryButton = findViewById(R.id.placeholderRetryButton)
 
-        val trackList = mutableListOf(
-            Track("Smells Like Teen Spirit", "Nirvana", "5:01", "https://is5-ssl.mzstatic.com/image/thumb/Music115/v4/7b/58/c2/7b58c21a-2b51-2bb2-e59a-9bb9b96ad8c3/00602567924166.rgb.jpg/100x100bb.jpg"),
-            Track("Billie Jean", "Michael Jackson", "4:35", "https://is5-ssl.mzstatic.com/image/thumb/Music125/v4/3d/9d/38/3d9d3811-71f0-3a0e-1ada-3004e56ff852/827969428726.jpg/100x100bb.jpg"),
-            Track("Stayin' Alive", "Bee Gees", "4:10", "https://is4-ssl.mzstatic.com/image/thumb/Music115/v4/1f/80/1f/1f801fc1-8c0f-ea3e-d3e5-387c6619619e/16UMGIM86640.rgb.jpg/100x100bb.jpg"),
-            Track("Whole Lotta Love", "Led Zeppelin", "5:33", "https://is2-ssl.mzstatic.com/image/thumb/Music62/v4/7e/17/e3/7e17e33f-2efa-2a36-e916-7f808576cf6b/mzm.fyigqcbs.jpg/100x100bb.jpg"),
-            Track("Sweet Child O'Mine", "Guns N' Roses", "5:03", "https://is5-ssl.mzstatic.com/image/thumb/Music125/v4/a0/4d/c4/a04dc484-03cc-02aa-fa82-5334fcb4bc16/18UMGIM24878.rgb.jpg/100x100bb.jpg")
-        )
-
-        trackAdapter = TrackAdapter(trackList)
+        trackAdapter = TrackAdapter()
         tracksRecyclerView.layoutManager = LinearLayoutManager(this)
         tracksRecyclerView.adapter = trackAdapter
 
-        if (savedInstanceState != null) {
-            searchQuery = savedInstanceState.getString(SEARCH_QUERY_KEY, "")
-            searchEditText.setText(searchQuery)
-        }
-
-        searchEditText.doOnTextChanged { text, _, _, _ ->
-            searchQuery = text?.toString().orEmpty()
-            clearButton.isVisible = searchQuery.isNotEmpty()
+        searchEditText.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                val query = searchEditText.text.toString().trim()
+                if (query.isNotEmpty()) {
+                    searchTracks(query)
+                }
+                true
+            } else {
+                false
+            }
         }
 
         clearButton.setOnClickListener {
             searchEditText.text.clear()
             clearButton.isVisible = false
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(searchEditText.windowToken, 0)
+            trackAdapter.updateTracks(emptyList())
+            tracksRecyclerView.isVisible = false
+            placeholderImage.isVisible = false
+            placeholderText.isVisible = false
+            retryButton.isVisible = false
+        }
+
+        searchEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                clearButton.isVisible = s?.isNotEmpty() == true
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        retryButton.setOnClickListener {
+            if (lastSearchText.isNotEmpty()) {
+                searchTracks(lastSearchText)
+            }
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putString(SEARCH_QUERY_KEY, searchQuery)
+    private fun searchTracks(query: String) {
+        lastSearchText = query
+        RetrofitClient.api.searchTracks(query)
+            .enqueue(object : Callback<TrackResponse> {
+                override fun onResponse(call: Call<TrackResponse>, response: Response<TrackResponse>) {
+                    if (response.isSuccessful && response.body() != null) {
+                        val results = response.body()!!.results
+                        if (results.isEmpty()) {
+                            showPlaceholder(
+                                getDrawableId("placeholder_no_results"),
+                                getString(R.string.no_results),
+                                null,
+                                false
+                            )
+                        } else {
+                            val tracks = results.mapNotNull { dto ->
+                                if (dto.trackName != null && dto.artistName != null && dto.trackTimeMillis != null && dto.artworkUrl100 != null) {
+                                    Track(
+                                        dto.trackName,
+                                        dto.artistName,
+                                        SimpleDateFormat("mm:ss", Locale.getDefault()).format(dto.trackTimeMillis),
+                                        dto.artworkUrl100
+                                    )
+                                } else null
+                            }
+                            trackAdapter.updateTracks(tracks)
+                            showResults()
+                        }
+                    } else {
+                        val title = getString(R.string.connection_error_title)
+                        val subtitle = getString(R.string.connection_error_subtitle)
+                        showPlaceholder(
+                            getDrawableId("placeholder_error"),
+                            title,
+                            subtitle,
+                            true
+                        )
+                    }
+                }
+
+                override fun onFailure(call: Call<TrackResponse>, t: Throwable) {
+                    val title = getString(R.string.connection_error_title)
+                    val subtitle = getString(R.string.connection_error_subtitle)
+                    showPlaceholder(
+                        getDrawableId("placeholder_error"),
+                        title,
+                        subtitle,
+                        true
+                    )
+                }
+            })
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        searchQuery = savedInstanceState.getString(SEARCH_QUERY_KEY, "")
-        searchEditText.setText(searchQuery)
+    private fun showPlaceholder(imageResId: Int, title: String, subtitle: String?, showRetry: Boolean) {
+        tracksRecyclerView.isVisible = false
+        placeholderImage.setImageResource(imageResId)
+        placeholderImage.isVisible = true
+        placeholderText.text = if (subtitle != null) "$title\n$subtitle" else title
+        placeholderText.isVisible = true
+        retryButton.isVisible = showRetry
+    }
+
+    private fun showResults() {
+        placeholderImage.isVisible = false
+        placeholderText.isVisible = false
+        retryButton.isVisible = false
+        tracksRecyclerView.isVisible = true
+    }
+
+    private fun getDrawableId(namePrefix: String): Int {
+        val isDarkTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        val suffix = if (isDarkTheme) "dark_mode" else "light_mode"
+        val resName = "${namePrefix}_$suffix"
+        return resources.getIdentifier(resName, "drawable", packageName)
     }
 }

@@ -39,5 +39,19 @@
         <item name="android:fontFamily">@font/ys_display_regular</item>
     </style>
 
+    <style name="RetryButtonStyle" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@null</item>
+        <item name="android:background">@drawable/button_background</item>
+        <item name="android:textColor">?attr/colorButtonText</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:minWidth">91dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@font/ys_display_medium</item>
+    </style>
+
+
+
 
 </resources>
