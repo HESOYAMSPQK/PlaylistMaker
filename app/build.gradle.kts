@@ -53,4 +53,5 @@ dependencies {
     kapt(libs.glide.compiler)
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+
 }
