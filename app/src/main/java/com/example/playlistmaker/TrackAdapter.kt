@@ -21,6 +21,7 @@ class TrackAdapter(
     override fun getItemCount(): Int = tracks.size
 
     fun updateTracks(newTracks: List<Track>) {
+
         tracks.clear()
         tracks.addAll(newTracks)
         notifyDataSetChanged()
