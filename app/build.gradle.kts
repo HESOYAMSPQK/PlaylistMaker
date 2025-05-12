@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("org.jetbrains.kotlin.kapt")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -13,6 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.playlistmaker"
+        vectorDrawables.useSupportLibrary = true
         minSdk = 29
         targetSdk = 35
         versionCode = 1
@@ -53,5 +55,6 @@ dependencies {
     kapt(libs.glide.compiler)
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
 }
