@@ -4,20 +4,29 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.*
-import androidx.appcompat.widget.Toolbar
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.playlistmaker.network.RetrofitClient
 import com.example.playlistmaker.network.TrackResponse
+import com.example.playlistmaker.SearchHistory
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class SearchActivity : AppCompatActivity() {
 
@@ -29,40 +38,99 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var placeholderText: TextView
     private lateinit var retryButton: Button
 
+    private lateinit var searchHistory: SearchHistory
+    private lateinit var historyContainer: View
+    private lateinit var historyRecyclerView: RecyclerView
+    private lateinit var clearHistoryButton: Button
+    private lateinit var historyAdapter: TrackAdapter
+
+    private var currentSearchResults: List<Track> = emptyList()
+    private var currentHistoryList: List<Track> = emptyList()
+
     private var lastSearchText: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
 
+
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        toolbar.setNavigationOnClickListener {
-            finish()
+        toolbar.setNavigationOnClickListener { finish() }
+
+        searchEditText     = findViewById(R.id.searchEditText)
+        clearButton        = findViewById(R.id.clearButton)
+        tracksRecyclerView = findViewById(R.id.tracksRecyclerView)
+        placeholderImage   = findViewById(R.id.placeholderImage)
+        placeholderText    = findViewById(R.id.placeholderText)
+        retryButton        = findViewById(R.id.placeholderRetryButton)
+
+        searchHistory      = SearchHistory(getSharedPreferences("search_history", MODE_PRIVATE))
+        historyContainer   = findViewById(R.id.historyContainer)
+        historyRecyclerView= findViewById(R.id.historyRecyclerView)
+        clearHistoryButton = findViewById(R.id.clearHistoryButton)
+
+        val initialHistory = searchHistory.getAll().toMutableList()
+        currentHistoryList = initialHistory
+        historyAdapter = TrackAdapter(initialHistory)
+        historyRecyclerView.layoutManager = LinearLayoutManager(this)
+        historyRecyclerView.adapter = historyAdapter
+
+        val historyGesture = GestureDetector(this, object: GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapUp(e: MotionEvent) = true
+        })
+        historyRecyclerView.addOnItemTouchListener(object: RecyclerView.OnItemTouchListener {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                val child = rv.findChildViewUnder(e.x, e.y) ?: return false
+                if (historyGesture.onTouchEvent(e)) {
+                    val pos = rv.getChildAdapterPosition(child)
+                    val clicked = currentHistoryList.getOrNull(pos) ?: return false
+                    searchHistory.add(clicked)
+                    updateHistoryVisibility()
+                    return true
+                }
+                return false
+            }
+            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
+            override fun onRequestDisallowInterceptTouchEvent(disallow: Boolean) {}
         }
 
+        )
 
-        searchEditText = findViewById(R.id.searchEditText)
-        clearButton = findViewById(R.id.clearButton)
-        tracksRecyclerView = findViewById(R.id.tracksRecyclerView)
-        placeholderImage = findViewById(R.id.placeholderImage)
-        placeholderText = findViewById(R.id.placeholderText)
-        retryButton = findViewById(R.id.placeholderRetryButton)
+        clearHistoryButton.setOnClickListener {
+            searchHistory.clear()
+            updateHistoryVisibility()
+        }
 
         trackAdapter = TrackAdapter()
         tracksRecyclerView.layoutManager = LinearLayoutManager(this)
         tracksRecyclerView.adapter = trackAdapter
 
+        val searchGesture = GestureDetector(this, object: GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapUp(e: MotionEvent) = true
+        })
+        tracksRecyclerView.addOnItemTouchListener(object: RecyclerView.OnItemTouchListener {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                val child = rv.findChildViewUnder(e.x, e.y) ?: return false
+                if (searchGesture.onTouchEvent(e)) {
+                    val pos = rv.getChildAdapterPosition(child)
+                    val clicked = currentSearchResults.getOrNull(pos) ?: return false
+                    searchHistory.add(clicked)
+                    updateHistoryVisibility()
+                    return true
+                }
+                return false
+            }
+            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
+            override fun onRequestDisallowInterceptTouchEvent(disallow: Boolean) {}
+        })
+
         searchEditText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 val query = searchEditText.text.toString().trim()
-                if (query.isNotEmpty()) {
-                    searchTracks(query)
-                }
+                if (query.isNotEmpty()) searchTracks(query)
                 true
-            } else {
-                false
-            }
+            } else false
         }
 
         clearButton.setOnClickListener {
@@ -73,29 +141,31 @@ class SearchActivity : AppCompatActivity() {
             placeholderImage.isVisible = false
             placeholderText.isVisible = false
             retryButton.isVisible = false
+            updateHistoryVisibility()
         }
 
-        searchEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                clearButton.isVisible = s?.isNotEmpty() == true
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        searchEditText.addTextChangedListener(object: TextWatcher {
+            override fun afterTextChanged(s: Editable?) { clearButton.isVisible = s?.isNotEmpty() == true }
+            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
+            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) { updateHistoryVisibility() }
         })
 
         retryButton.setOnClickListener {
-            if (lastSearchText.isNotEmpty()) {
-                searchTracks(lastSearchText)
-            }
+            if (lastSearchText.isNotEmpty()) searchTracks(lastSearchText)
         }
+        searchEditText.setOnFocusChangeListener { _, _ -> updateHistoryVisibility() }
+
+        updateHistoryVisibility()
     }
 
     private fun searchTracks(query: String) {
         lastSearchText = query
         RetrofitClient.api.searchTracks(query)
-            .enqueue(object : Callback<TrackResponse> {
-                override fun onResponse(call: Call<TrackResponse>, response: Response<TrackResponse>) {
+            .enqueue(object: Callback<TrackResponse> {
+                override fun onResponse(
+                    call: Call<TrackResponse>,
+                    response: Response<TrackResponse>
+                ) {
                     if (response.isSuccessful && response.body() != null) {
                         val results = response.body()!!.results
                         if (results.isEmpty()) {
@@ -107,48 +177,56 @@ class SearchActivity : AppCompatActivity() {
                             )
                         } else {
                             val tracks = results.mapNotNull { dto ->
-                                if (dto.trackName != null && dto.artistName != null && dto.trackTimeMillis != null && dto.artworkUrl100 != null) {
+                                if (dto.trackId != null
+                                    && dto.trackName != null
+                                    && dto.artistName != null
+                                    && dto.trackTimeMillis != null
+                                    && dto.artworkUrl100 != null
+                                ) {
                                     Track(
-                                        dto.trackName,
-                                        dto.artistName,
-                                        SimpleDateFormat("mm:ss", Locale.getDefault()).format(dto.trackTimeMillis),
-                                        dto.artworkUrl100
+                                        trackName       = dto.trackName,
+                                        artistName      = dto.artistName,
+                                        artworkUrl100   = dto.artworkUrl100,
+                                        trackId         = dto.trackId,
+                                        trackTimeMillis = dto.trackTimeMillis
                                     )
                                 } else null
                             }
+                            currentSearchResults = tracks
                             trackAdapter.updateTracks(tracks)
                             showResults()
                         }
                     } else {
-                        val title = getString(R.string.connection_error_title)
-                        val subtitle = getString(R.string.connection_error_subtitle)
                         showPlaceholder(
                             getDrawableId("placeholder_error"),
-                            title,
-                            subtitle,
+                            getString(R.string.connection_error_title),
+                            getString(R.string.connection_error_subtitle),
                             true
                         )
                     }
                 }
 
                 override fun onFailure(call: Call<TrackResponse>, t: Throwable) {
-                    val title = getString(R.string.connection_error_title)
-                    val subtitle = getString(R.string.connection_error_subtitle)
                     showPlaceholder(
                         getDrawableId("placeholder_error"),
-                        title,
-                        subtitle,
+                        getString(R.string.connection_error_title),
+                        getString(R.string.connection_error_subtitle),
                         true
                     )
                 }
             })
     }
 
-    private fun showPlaceholder(imageResId: Int, title: String, subtitle: String?, showRetry: Boolean) {
+    private fun showPlaceholder(
+        imageResId: Int,
+        title: String,
+        subtitle: String?,
+        showRetry: Boolean
+    ) {
         tracksRecyclerView.isVisible = false
         placeholderImage.setImageResource(imageResId)
         placeholderImage.isVisible = true
-        placeholderText.text = if (subtitle != null) "$title\n$subtitle" else title
+        placeholderText.text = subtitle?.let { "$title\n$it" } ?: title
         placeholderText.isVisible = true
         retryButton.isVisible = showRetry
     }
@@ -160,10 +238,29 @@ class SearchActivity : AppCompatActivity() {
         tracksRecyclerView.isVisible = true
     }
 
+    private fun updateHistoryVisibility() {
+        val historyList = searchHistory.getAll()
+        currentHistoryList = historyList
+        val shouldShow =
+            searchEditText.hasFocus() &&
+                    searchEditText.text.isEmpty() &&
+                    historyList.isNotEmpty()
+
+        historyContainer.isVisible = shouldShow
+        if (shouldShow) {
+            historyAdapter.updateTracks(historyList)
+        }
+    }
+
     private fun getDrawableId(namePrefix: String): Int {
-        val isDarkTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        val suffix = if (isDarkTheme) "dark_mode" else "light_mode"
-        val resName = "${namePrefix}_$suffix"
-        return resources.getIdentifier(resName, "drawable", packageName)
+        val isDark = (resources.configuration.uiMode
+                and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+        val suffix = if (isDark) "dark_mode" else "light_mode"
+        return resources.getIdentifier(
+            "${namePrefix}_$suffix",
+            "drawable",
+            packageName
+        )
     }
 }
