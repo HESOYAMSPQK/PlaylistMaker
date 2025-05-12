@@ -70,6 +70,57 @@
 
     </FrameLayout>
 
+    <LinearLayout
+        android:id="@+id/historyContainer"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:paddingStart="@dimen/padding_16"
+        android:paddingEnd="@dimen/padding_16"
+        android:layout_marginTop="@dimen/search_track_list_margin_top">
+
+        <TextView
+            android:id="@+id/historyTitle"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_height="wrap_content"
+            android:text="@string/history_title"
+            android:layout_marginTop="@dimen/margin_24"
+            android:textSize="@dimen/history_title_text_size"
+            android:fontFamily="@font/ys_display_medium"
+            android:textColor="?attr/colorOnBackground"/>
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/historyRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:scrollbars="vertical"
+            android:layout_marginTop="@dimen/history_item_margin_vertical"
+            android:layout_marginBottom="@dimen/history_item_margin_vertical"
+            tools:listitem="@layout/item_track" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/clearHistoryButton"
+            android:layout_width="148dp"
+            android:layout_height="36dp"
+            android:layout_marginTop="16dp"
+            android:layout_gravity="center_horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:backgroundTint="?attr/colorOnBackground"
+            app:cornerRadius="54dp"
+            android:text="@string/clear_history"
+            android:textSize="14sp"
+            android:fontFamily="@font/ys_display_medium"
+            android:textColor="?attr/colorSurface"/>
+
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/tracksRecyclerView"
         android:layout_width="match_parent"
@@ -116,10 +167,6 @@
         android:text="@string/button_retry"
         android:layout_gravity="center"
         android:visibility="gone" />
-
-
-
-
 
 
 
