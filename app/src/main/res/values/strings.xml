@@ -16,4 +16,9 @@
     <string name="email_body">Спасибо разработчикам и разработчицам за крутое приложение!</string>
     <string name="agreement_url">https://yandex.ru/legal/practicum_offer/</string>
     <string name="track_cover">Обложка трека</string>
+    <string name="no_results">Ничего не нашлось</string>
+    <string name="connection_error_title">Проблемы со связью</string>
+    <string name="connection_error_subtitle">\nЗагрузка не удалась. Проверьте подключение к интернету</string>
+    <string name="button_retry">Обновить</string>
+
 </resources>

@@ -14,20 +14,36 @@ class TrackViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private val artistName: TextView = itemView.findViewById(R.id.artistName)
     private val trackTime: TextView = itemView.findViewById(R.id.trackTime)
 
-    fun Int.dpToPx(context: Context): Int {
+    private fun Int.dpToPx(context: Context): Int {
         return (this * context.resources.displayMetrics.density).toInt()
     }
 
     fun bind(track: Track) {
-        trackName.text = track.trackName
-        artistName.text = track.artistName
-        trackTime.text = track.trackTime
+        trackName.text    = track.trackName
+        artistName.text   = track.artistName
+        trackTime.text    = track.trackTime
 
-        Glide.with(itemView)
-            .load(track.artworkUrl100)
-            .placeholder(R.drawable.cover_placeholder)
-            .centerCrop()
-            .transform(RoundedCorners(8.dpToPx(itemView.context)))
-            .into(trackImage)
+        val url = track.artworkUrl100
+        val dp5 = 5.dpToPx(itemView.context)
+        val cornerRadius = 8.dpToPx(itemView.context)
+
+        if (url.isNullOrBlank()) {
+            trackImage.setPadding(dp5, dp5, dp5, dp5)
+            trackImage.scaleType = ImageView.ScaleType.CENTER_INSIDE
+
+            Glide.with(itemView)
+                .load(R.drawable.ic_placeholder)
+                .into(trackImage)
+        } else {
+            trackImage.setPadding(0, 0, 0, 0)
+            trackImage.scaleType = ImageView.ScaleType.CENTER_CROP
+
+            Glide.with(itemView)
+                .load(url)
+                .placeholder(R.drawable.ic_placeholder)
+                .error(R.drawable.ic_placeholder)
+                .transform(RoundedCorners(cornerRadius))
+                .into(trackImage)
+        }
     }
 }
