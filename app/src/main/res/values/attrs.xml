@@ -6,4 +6,6 @@
     <attr name="colorOnPlayList" format="color" />
     <attr name="colorButtonBackground" format="color" />
     <attr name="colorButtonText" format="color" />
+    <attr name="colorIconButtonTint" format="color"/>
+    <attr name="colorIconButtonTint2" format="color"/>
 </resources>

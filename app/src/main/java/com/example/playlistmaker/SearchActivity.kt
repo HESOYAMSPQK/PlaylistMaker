@@ -20,6 +20,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.playlistmaker.network.RetrofitClient
 import com.example.playlistmaker.network.TrackResponse
+import android.content.Intent
+import com.example.playlistmaker.AudioPlayerActivity
+import com.example.playlistmaker.Track
 import com.example.playlistmaker.SearchHistory
 import retrofit2.Call
 import retrofit2.Callback
@@ -86,6 +89,10 @@ class SearchActivity : AppCompatActivity() {
                     val pos = rv.getChildAdapterPosition(child)
                     val clicked = currentHistoryList.getOrNull(pos) ?: return false
                     searchHistory.add(clicked)
+                    val intent = Intent(this@SearchActivity, AudioPlayerActivity::class.java).apply {
+                        putExtra("track", clicked)
+                    }
+                    startActivity(intent)
                     updateHistoryVisibility()
                     return true
                 }
@@ -116,6 +123,11 @@ class SearchActivity : AppCompatActivity() {
                     val pos = rv.getChildAdapterPosition(child)
                     val clicked = currentSearchResults.getOrNull(pos) ?: return false
                     searchHistory.add(clicked)
+                    // в tracksRecyclerView.addOnItemTouchListener
+                    val intent = Intent(this@SearchActivity, AudioPlayerActivity::class.java).apply {
+                        putExtra("track", clicked)
+                    }
+                    startActivity(intent)
                     updateHistoryVisibility()
                     return true
                 }
@@ -184,16 +196,21 @@ class SearchActivity : AppCompatActivity() {
                                     && dto.artworkUrl100 != null
                                 ) {
                                     Track(
-                                        trackName       = dto.trackName,
-                                        artistName      = dto.artistName,
-                                        artworkUrl100   = dto.artworkUrl100,
-                                        trackId         = dto.trackId,
-                                        trackTimeMillis = dto.trackTimeMillis
+                                        trackName        = dto.trackName,
+                                        artistName       = dto.artistName,
+                                        artworkUrl100    = dto.artworkUrl100,
+                                        trackId          = dto.trackId,
+                                        trackTimeMillis  = dto.trackTimeMillis,
+                                        collectionName   = dto.collectionName,
+                                        releaseDate      = dto.releaseDate,
+                                        primaryGenreName = dto.primaryGenreName,
+                                        country          = dto.country
                                     )
                                 } else null
                             }
                             currentSearchResults = tracks
                             trackAdapter.updateTracks(tracks)
+
                             showResults()
                         }
                     } else {
