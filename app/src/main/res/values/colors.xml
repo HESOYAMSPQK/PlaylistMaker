@@ -13,4 +13,7 @@
     <color name="vector_color">#AEAFB4</color>
     <color name="light_grey">#E6E8EB</color>
     <color name="text_grey">#AEAFB4</color>
+    <color name="icon_btn_bg">#40535459</color>
+    <color name="pressed_color">#22000000</color>
+    <color name="transparent">#00000000</color>
 </resources>

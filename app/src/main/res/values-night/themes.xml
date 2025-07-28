@@ -17,5 +17,9 @@
         <item name="colorButtonBackground">@color/white</item>
         <item name="colorButtonText">@color/black</item>
 
+        <item name="colorIconButtonTint">#40FFFFFF</item>
+
+        <item name="colorIconButtonTint2">#40535459</item>
+
     </style>
 </resources>
