@@ -1,35 +1,26 @@
 package com.example.playlistmaker
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.playlistmaker.network.RetrofitClient
 import com.example.playlistmaker.network.TrackResponse
-import android.content.Intent
-import com.example.playlistmaker.AudioPlayerActivity
-import com.example.playlistmaker.Track
-import com.example.playlistmaker.SearchHistory
+import com.example.playlistmaker.network.RetrofitClient
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class SearchActivity : AppCompatActivity() {
 
@@ -40,26 +31,27 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var placeholderImage: ImageView
     private lateinit var placeholderText: TextView
     private lateinit var retryButton: Button
+    private lateinit var searchProgressBar: ProgressBar
 
     private lateinit var searchHistory: SearchHistory
     private lateinit var historyContainer: View
     private lateinit var historyRecyclerView: RecyclerView
-    private lateinit var clearHistoryButton: Button
     private lateinit var historyAdapter: TrackAdapter
 
     private var currentSearchResults: List<Track> = emptyList()
     private var currentHistoryList: List<Track> = emptyList()
-
     private var lastSearchText: String = ""
+
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
+    private val DEBOUNCE_DELAY = 2000L
+
+    private var lastItemClickTime = 0L
+    private val CLICK_DEBOUNCE_DELAY = 1000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
-
-
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        toolbar.setNavigationOnClickListener { finish() }
 
         searchEditText     = findViewById(R.id.searchEditText)
         clearButton        = findViewById(R.id.clearButton)
@@ -67,17 +59,18 @@ class SearchActivity : AppCompatActivity() {
         placeholderImage   = findViewById(R.id.placeholderImage)
         placeholderText    = findViewById(R.id.placeholderText)
         retryButton        = findViewById(R.id.placeholderRetryButton)
-
-        searchHistory      = SearchHistory(getSharedPreferences("search_history", MODE_PRIVATE))
+        searchProgressBar  = findViewById(R.id.searchProgressBar)
         historyContainer   = findViewById(R.id.historyContainer)
         historyRecyclerView= findViewById(R.id.historyRecyclerView)
-        clearHistoryButton = findViewById(R.id.clearHistoryButton)
-
-        val initialHistory = searchHistory.getAll().toMutableList()
-        currentHistoryList = initialHistory
-        historyAdapter = TrackAdapter(initialHistory)
+        val prefs = getSharedPreferences("search_history_prefs", MODE_PRIVATE)
+        searchHistory = SearchHistory(prefs)
+        historyAdapter = TrackAdapter()
         historyRecyclerView.layoutManager = LinearLayoutManager(this)
         historyRecyclerView.adapter = historyAdapter
+
+        trackAdapter = TrackAdapter()
+        tracksRecyclerView.layoutManager = LinearLayoutManager(this)
+        tracksRecyclerView.adapter = trackAdapter
 
         val historyGesture = GestureDetector(this, object: GestureDetector.SimpleOnGestureListener() {
             override fun onSingleTapUp(e: MotionEvent) = true
@@ -89,10 +82,9 @@ class SearchActivity : AppCompatActivity() {
                     val pos = rv.getChildAdapterPosition(child)
                     val clicked = currentHistoryList.getOrNull(pos) ?: return false
                     searchHistory.add(clicked)
-                    val intent = Intent(this@SearchActivity, AudioPlayerActivity::class.java).apply {
+                    startActivity(Intent(this@SearchActivity, AudioPlayerActivity::class.java).apply {
                         putExtra("track", clicked)
-                    }
-                    startActivity(intent)
+                    })
                     updateHistoryVisibility()
                     return true
                 }
@@ -100,18 +92,7 @@ class SearchActivity : AppCompatActivity() {
             }
             override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
             override fun onRequestDisallowInterceptTouchEvent(disallow: Boolean) {}
-        }
-
-        )
-
-        clearHistoryButton.setOnClickListener {
-            searchHistory.clear()
-            updateHistoryVisibility()
-        }
-
-        trackAdapter = TrackAdapter()
-        tracksRecyclerView.layoutManager = LinearLayoutManager(this)
-        tracksRecyclerView.adapter = trackAdapter
+        })
 
         val searchGesture = GestureDetector(this, object: GestureDetector.SimpleOnGestureListener() {
             override fun onSingleTapUp(e: MotionEvent) = true
@@ -120,14 +101,16 @@ class SearchActivity : AppCompatActivity() {
             override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
                 val child = rv.findChildViewUnder(e.x, e.y) ?: return false
                 if (searchGesture.onTouchEvent(e)) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastItemClickTime < CLICK_DEBOUNCE_DELAY) return false
+                    lastItemClickTime = now
+
                     val pos = rv.getChildAdapterPosition(child)
                     val clicked = currentSearchResults.getOrNull(pos) ?: return false
                     searchHistory.add(clicked)
-                    // в tracksRecyclerView.addOnItemTouchListener
-                    val intent = Intent(this@SearchActivity, AudioPlayerActivity::class.java).apply {
+                    startActivity(Intent(this@SearchActivity, AudioPlayerActivity::class.java).apply {
                         putExtra("track", clicked)
-                    }
-                    startActivity(intent)
+                    })
                     updateHistoryVisibility()
                     return true
                 }
@@ -137,47 +120,57 @@ class SearchActivity : AppCompatActivity() {
             override fun onRequestDisallowInterceptTouchEvent(disallow: Boolean) {}
         })
 
-        searchEditText.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                val query = searchEditText.text.toString().trim()
-                if (query.isNotEmpty()) searchTracks(query)
-                true
-            } else false
-        }
-
         clearButton.setOnClickListener {
             searchEditText.text.clear()
             clearButton.isVisible = false
+            searchRunnable?.let { searchHandler.removeCallbacks(it) }
             trackAdapter.updateTracks(emptyList())
             tracksRecyclerView.isVisible = false
             placeholderImage.isVisible = false
             placeholderText.isVisible = false
             retryButton.isVisible = false
-            updateHistoryVisibility()
         }
 
-        searchEditText.addTextChangedListener(object: TextWatcher {
-            override fun afterTextChanged(s: Editable?) { clearButton.isVisible = s?.isNotEmpty() == true }
-            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
-            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) { updateHistoryVisibility() }
+        searchEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                val query = s?.toString()?.trim() ?: ""
+                if (query.isNotEmpty()) {
+                    searchRunnable?.let {
+                        searchHandler.removeCallbacks(it)
+                        searchHandler.postDelayed(it, DEBOUNCE_DELAY)
+                    } ?: run {
+                        searchRunnable = Runnable { searchTracks(query) }.also {
+                            searchHandler.postDelayed(it, DEBOUNCE_DELAY)
+                        }
+                    }
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateHistoryVisibility()
+            }
         })
 
         retryButton.setOnClickListener {
             if (lastSearchText.isNotEmpty()) searchTracks(lastSearchText)
         }
-        searchEditText.setOnFocusChangeListener { _, _ -> updateHistoryVisibility() }
 
         updateHistoryVisibility()
     }
 
     private fun searchTracks(query: String) {
         lastSearchText = query
+        searchProgressBar.isVisible = true
+        tracksRecyclerView.isVisible = false
+        placeholderImage.isVisible = false
+        placeholderText.isVisible = false
+        retryButton.isVisible = false
+
         RetrofitClient.api.searchTracks(query)
             .enqueue(object: Callback<TrackResponse> {
-                override fun onResponse(
-                    call: Call<TrackResponse>,
-                    response: Response<TrackResponse>
-                ) {
+                override fun onResponse(call: Call<TrackResponse>, response: Response<TrackResponse>) {
+                    searchProgressBar.isVisible = false
+
                     if (response.isSuccessful && response.body() != null) {
                         val results = response.body()!!.results
                         if (results.isEmpty()) {
@@ -194,11 +187,13 @@ class SearchActivity : AppCompatActivity() {
                                     && dto.artistName != null
                                     && dto.trackTimeMillis != null
                                     && dto.artworkUrl100 != null
+                                    && dto.previewUrl != null
                                 ) {
                                     Track(
                                         trackName        = dto.trackName,
                                         artistName       = dto.artistName,
                                         artworkUrl100    = dto.artworkUrl100,
+                                        previewUrl       = dto.previewUrl,
                                         trackId          = dto.trackId,
                                         trackTimeMillis  = dto.trackTimeMillis,
                                         collectionName   = dto.collectionName,
@@ -210,7 +205,6 @@ class SearchActivity : AppCompatActivity() {
                             }
                             currentSearchResults = tracks
                             trackAdapter.updateTracks(tracks)
-
                             showResults()
                         }
                     } else {
@@ -222,8 +216,8 @@ class SearchActivity : AppCompatActivity() {
                         )
                     }
                 }
-
                 override fun onFailure(call: Call<TrackResponse>, t: Throwable) {
+                    searchProgressBar.isVisible = false
                     showPlaceholder(
                         getDrawableId("placeholder_error"),
                         getString(R.string.connection_error_title),
@@ -240,6 +234,7 @@ class SearchActivity : AppCompatActivity() {
         subtitle: String?,
         showRetry: Boolean
     ) {
+        searchProgressBar.isVisible = false
         tracksRecyclerView.isVisible = false
         placeholderImage.setImageResource(imageResId)
         placeholderImage.isVisible = true
@@ -249,6 +244,7 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun showResults() {
+        searchProgressBar.isVisible = false
         placeholderImage.isVisible = false
         placeholderText.isVisible = false
         retryButton.isVisible = false
@@ -258,13 +254,11 @@ class SearchActivity : AppCompatActivity() {
     private fun updateHistoryVisibility() {
         val historyList = searchHistory.getAll()
         currentHistoryList = historyList
-        val shouldShow =
+        historyContainer.isVisible =
             searchEditText.hasFocus() &&
                     searchEditText.text.isEmpty() &&
                     historyList.isNotEmpty()
-
-        historyContainer.isVisible = shouldShow
-        if (shouldShow) {
+        if (historyContainer.isVisible) {
             historyAdapter.updateTracks(historyList)
         }
     }

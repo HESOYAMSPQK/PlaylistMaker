@@ -80,7 +80,7 @@
             android:layout_gravity="center"
             android:src="@drawable/ic_play_arrow"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="?attr/colorOnBackground"
+            app:tint="?attr/colorOnBackground"
             android:contentDescription="@string/play"
             android:elevation="6dp"/>
     </FrameLayout>
